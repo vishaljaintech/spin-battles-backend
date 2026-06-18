@@ -14,6 +14,9 @@ use std::str::FromStr;
 /// `get_pending_rewards()` fetches live battle data from the game server.
 /// The sign flow is required by the on-chain program.
 
+// Wallet must sign this message to prove ownership before we sign a claim.
+const EXPECTED_WALLET_MESSAGE: &str = "Verify wallet ownership";
+
 /// Generate a backend-signed authorisation for a reward claim.
 ///
 /// This is the critical integration point between the backend and the Solana program.
@@ -33,6 +36,13 @@ pub async fn authorise_claim_signature(
     battle_id: &str,
 ) -> Result<(String, String, String, i64), AppError> {
     // Step 1: Verify wallet ownership
+    if wallet_message != EXPECTED_WALLET_MESSAGE {
+        return Err(AppError::BadRequest(format!(
+            "wallet_message must be exactly \"{}\"",
+            EXPECTED_WALLET_MESSAGE
+        )));
+    }
+
     let verified = crate::services::wallet_service::verify_signature(
         player_address,
         wallet_signature,
